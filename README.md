@@ -31,7 +31,7 @@ The dataset is perfectly balanced across all four morphological classes.
 | Validation | 60 |
 | Test | 60 |
 
-### Preprocessing (applied via Roboflow)
+### Preprocessing 
 1. **Auto-Orient** — corrects EXIF rotation inconsistencies across microscope image exports
 2. **Resize** — all images standardised to 640×640 pixels
 3. **Adaptive Equalization (CLAHE)** — Contrast Limited Adaptive Histogram Equalization applied to normalise uneven microscope illumination (bright center, darker edges in circular field of view). Uses local contrast normalisation with clip limit 2.0 and tile grid 8×8, preserving inter-particle texture differences critical for morphology classification
