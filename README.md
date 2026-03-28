@@ -135,13 +135,16 @@ Frontend Dashboard
 
 
 ```
+### 5.Risk score metrics
+<img width="1030" height="540" alt="Screenshot 2026-03-28 142604" src="https://github.com/user-attachments/assets/1bb2d070-e888-4c9b-8ab9-3514f839eede" />
+
 
 ### Research Gap Addressed
 All established ecological risk indices (PLI, PERI, PHI, RQ) require polymer chemical identification via FTIR spectroscopy. Our ETI and pollution source attribution system is the first morphology-and-size-derived risk framework computable directly from a microscope image, enabling real-time field assessment without chemical analysis.
 
 ---
 
-## 5. References
+## 6. References
 
 1. Cambridge Prisms: Microplastics — Zooplankton ingestion study, 2023
 2. ACS Environmental Science & Technology — Selective microplastic ingestion by copepod species, 2020
