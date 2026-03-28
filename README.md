@@ -42,7 +42,6 @@ The dataset is perfectly balanced across all four morphological classes.
 - Rotation ±15°
 - Brightness adjustment ±20%
 
-> Blur augmentation was deliberately excluded — microscope images are always in focus by design, so blur would introduce unrealistic artifacts and potentially erase faint film-type particles.
 
 ### Additional Training-time Augmentation (YOLOv11 config)
 - **Mosaic augmentation** (p=1.0) — pastes 4 images together per batch, critical for improving small-object (pallet) detection
