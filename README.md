@@ -95,41 +95,189 @@ The dataset is perfectly balanced across all four morphological classes.
 - Minimal cross-class confusion — morphological features are visually distinct to the model
 
 ---
-
-## 3. Key Features
-
-- **Image input** — accepts `.jpg` / `.png` microscope or high-magnification smartphone images
-- **Morphology classification** — detects and classifies all particles in a single image into fiber, film, fragment, or pallet (including multiple particles per image)
-- **Size estimation** — computes Feret diameter (longest diagonal of bounding box in pixels), converted to micrometers (µm) using microscope scale calibration
-- **Marine Ecological Threat Index (ETI)** — scientifically grounded risk score (0–100) per particle, combining:
-  - Morphology score (literature-backed marine ingestion evidence)
-  - Non-linear size score (zooplankton ingestion threshold at 100µm, Cambridge Marine Toxicology 2023)
-  - Trophic amplification score (food web bioaccumulation multiplier for particles <100µm)
-- **Pellet / Microbead detection** — fourth morphological class (pallet) fully implemented
-
-
-
+## 3. Risk Scoring — Contextual Threat Score (CTS)
+ 
+The CTS is a multi-layer scoring system that combines per-particle geometry, biological pathway analysis, depth zone physics, and contextual ecology (marine zone × season) into a single 0–100 threat score with a natural language narrative.
+ 
+### Layer 0 — Zone × Season Context
+ 
+Scores are not static. Weights and severity multipliers shift based on the marine zone being assessed and the active ecological season, reflecting real-world variation in species vulnerability.
+ 
+**5 supported marine zones:**
+ 
+| Zone | Supported seasons |
+|---|---|
+| `coral_reef` | spawning, dry, monsoon, winter, migration, upwelling |
+| `mangrove_estuary` | spawning, dry, monsoon, winter, migration, upwelling |
+| `pelagic_open_ocean` | spawning, dry, monsoon, winter, migration, upwelling, melt, ice |
+| `coastal_benthic` | spawning, dry, monsoon, winter, migration, upwelling |
+| `polar` | melt, ice, migration, spawning |
+ 
+Each zone-season combination provides dynamic weights (w1, w2, w3) for sub-scores S, P, H — a severity loading factor L — and a species-at-risk list per depth zone.
+ 
+*Example — coral reef during spawning season: w1=0.40, w2=0.35, w3=0.25, L=2.2. Species at risk: sea turtle, reef fish larvae, coral polyps, sea urchin, juvenile parrotfish.*
+ 
 ---
+ 
+### Sub-score S — Toxin Load (SA:V proxy)
+ 
+S estimates the surface-area-to-volume ratio of each particle from 2D geometry, which governs how efficiently a particle adsorbs and leaches persistent organic pollutants (POPs) and heavy metals.
+ 
+**Morphology-specific SA:V formulas:**
+ 
+| Morphology | Formula | Rationale |
+|---|---|---|
+| fiber | `4 / (min_feret_mm)` | Cylindrical approximation — thin fibers have extreme SA:V |
+| pallet | `6 / (max_feret_mm)` | Sphere approximation — standard for pellets |
+| fragment | `(perimeter / area) / convexity × rugosity` | Irregular surface — rugosity amplifies exposed area |
+| film | `perimeter / area` | Thin sheet — perimeter-to-area captures flatness |
+ 
+**Size modifier applied to all morphologies:**
+ 
+| Particle size | Modifier | Rationale |
+|---|---|---|
+| < 100 µm | 1.4× | Nanoscale — highest cellular uptake probability |
+| 100–1000 µm | 1.2× | Mesoscale — organ-level ingestion |
+| 1000–5000 µm | 1.0× | Standard microplastic range |
+| > 5000 µm | 0.7× | Macroplastic — lower bioavailability |
+ 
+S is normalised to a 0–10 scale.
+ 
+---
+ 
+### Sub-score P — Biological Pathway
+ 
+P identifies the specific biological harm mechanism based on particle shape geometry, scored 0–10. Geometry takes precedence over morphology class.
+ 
+| Geometric condition | Pathway | Score |
+|---|---|---|
+| circularity > 0.85 AND size < 100µm | Cellular penetration | 10.0 |
+| aspect ratio > 10 | Gill entanglement | 9.0 |
+| circularity < 0.4 AND 100µm < size < 3000µm | Digestive lodging | 7.0 |
+| size > 2000µm AND circularity < 0.3 | External entanglement | 6.0 |
+| fallback by morphology class | Class default | 6–9 |
+ 
+**Class defaults (fallback when geometry is ambiguous):**
+ 
+| Class | Pathway | P |
+|---|---|---|
+| fiber | gill entanglement | 9 |
+| fragment | digestive lodging | 7 |
+| film | external entanglement | 6 |
+| pallet | false satiation | 7 |
+ 
+---
+ 
+### Sub-score H — Depth Zone / Buoyancy
+ 
+H determines where in the water column a particle settles, dictating which organism communities are exposed.
+ 
+**Assignment logic (geometry-driven):**
+- aspect ratio > 8 OR area < 500µm² → `surface_drift` (fibers and tiny particles float)
+- area > 5,000,000µm² → `surface_drift` (very large films float)
+- otherwise → morphology class default
+ 
+| Depth zone | H score | Representative organisms |
+|---|---|---|
+| surface_drift | 8.5 | seabirds, sea turtles, surface fish |
+| mid_column | 6.0 | juvenile fish, squid, filter feeders |
+| benthic | 5.0 | coral, mussels, crabs, flatfish |
+ 
+---
+ 
+### Per-particle Score (Tp)
+ 
+Each particle receives a raw score combining the three sub-scores with zone-season weights, then scaled by YOLO detection confidence:
+ 
+```
+Tp_raw = S × w1 + P × w2 + H × w3
+Tp     = Tp_raw × confidence
+```
+ 
+Confidence weighting means low-certainty detections contribute proportionally less to the final sample score — linking model uncertainty directly to ecological risk.
+ 
+---
+ 
+### Sample-level Aggregation
+ 
+The sample score weights the top-risk particles more heavily, reflecting that a few highly dangerous particles disproportionately drive ecological harm.
+ 
+```
+T_base = top_20%_mean × 0.7 + full_mean × 0.3
+ 
+D (density modifier)  = min(2.5,  1 + log10(particles / cm²) × 0.6)
+ 
+diversity_mod         = min(1.3,  1 + Shannon_entropy × 0.15)
+  # Shannon entropy across morphology classes
+  # mixed-morphology samples score higher — multiple harm pathways simultaneously active
+ 
+T_raw   = T_base × D × diversity_mod × L
+T_final = min(100, round(T_raw / 35 × 100))
+```
+ 
+**Severity bands:**
+ 
+| Score | Band |
+|---|---|
+| 81–100 | Critical |
+| 61–80 | High |
+| 41–60 | Moderate |
+| 21–40 | Low |
+| 0–20 | Negligible |
+ 
+---
+ 
 
-## 4. Solution Architecture
 
+## 4. Key Features
+ 
+- **Image input** — accepts `.jpg` / `.png` microscope or high-magnification smartphone images
+- **Morphology classification** — detects and classifies all particles per image into fiber, film, fragment, or pallet using YOLOv11s (multiple particles per image supported)
+- **Size & geometry estimation** — computes Feret diameter, area, perimeter, circularity, aspect ratio, convexity, and rugosity per particle from contour analysis
+- **Contextual Threat Score (CTS)** — zone × season aware risk score with S/P/H sub-scores, density modifier, Shannon diversity modifier, and natural language narrative
+- **Pellet / Microbead detection** — fourth morphological class fully implemented
+- **Grad-CAM heatmap overlay** — per-particle explainability heatmap showing which image regions drove the classification decision
+- **Pollution Source Attribution** — identifies likely pollution source (textile effluent, fishing industry, packaging waste, personal care, urban stormwater) via confidence-weighted Morphology Distribution Vector and cosine similarity against literature-derived source profiles
+- **Batch processing** — multiple image upload with aggregate summary report
+ 
+---
+ 
+## 5. Solution Architecture
+ 
 ```
 Input Image
     ↓
 Preprocessing (CLAHE → resize to 640×640)
     ↓
 YOLOv11s Detection
-    ↓ ↓
-Bounding boxes + class + confidence
-    ↓                          ↓
-Size Estimation            Grad-CAM Heatmap
-(Feret diameter px → µm)   (per-particle overlay)
     ↓
-Marine ETI Scoring
-(morphology + size + trophic amplification)
+Bounding boxes + class + confidence
+    ↓                         ↓
+Size & Geometry           Grad-CAM Heatmap
+Estimation                (per-particle overlay)
+(Feret, area,
+ circularity,
+ aspect ratio,
+ convexity, rugosity)
+    ↓
+Contextual Threat Score (CTS)
+  ├── S: Toxin load (SA:V proxy from geometry)
+  ├── P: Biological pathway (geometry-driven)
+  ├── H: Depth zone / buoyancy
+  ├── Zone × Season weights (Layer 0 — 5 zones, 8 seasons)
+  ├── Density modifier D
+  ├── Shannon diversity modifier
+  └── Narrative generator
+    ↓
+Pollution Source Attribution
+(MDV fingerprint → cosine similarity → ranked sources)
     ↓
 Frontend Dashboard
-(annotated image · per-particle table · ETI gauge · source report)
+(annotated image · per-particle table · CTS gauge ·
+ species at risk · narrative · source attribution report)
+```
+ 
+---
 
 
 ```
