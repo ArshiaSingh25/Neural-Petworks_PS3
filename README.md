@@ -234,12 +234,7 @@ T_final = min(100, round(T_raw / 35 × 100))
 - **Image input** — accepts `.jpg` / `.png` microscope or high-magnification smartphone images
 - **Morphology classification** — detects and classifies all particles per image into fiber, film, fragment, or pallet using YOLOv11s (multiple particles per image supported)
 - **Size & geometry estimation** — computes Feret diameter, area, perimeter, circularity, aspect ratio, convexity, and rugosity per particle from contour analysis
-- **Contextual Threat Score (CTS)** — zone × season aware risk score with S/P/H sub-scores, density modifier, Shannon diversity modifier, and natural language narrative
-- **Pellet / Microbead detection** — fourth morphological class fully implemented
-- **Grad-CAM heatmap overlay** — per-particle explainability heatmap showing which image regions drove the classification decision
-- **Pollution Source Attribution** — identifies likely pollution source (textile effluent, fishing industry, packaging waste, personal care, urban stormwater) via confidence-weighted Morphology Distribution Vector and cosine similarity against literature-derived source profiles
-- **Batch processing** — multiple image upload with aggregate summary report
- 
+- **Contextual Threat Score (CTS)** — zone × season aware risk score with S/P/H sub-scores, density modifier, Shannon diversity modifier, and natural language narrative 
 ---
  
 ## 5. Solution Architecture
