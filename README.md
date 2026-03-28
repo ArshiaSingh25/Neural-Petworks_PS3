@@ -64,7 +64,7 @@ The dataset is perfectly balanced across all four morphological classes.
 
 | Parameter | Value |
 |---|---|
-| Epochs | 23 (early stopped) |
+| Epochs | 35  |
 | Batch size | 8 |
 | Optimizer | AdamW |
 | Learning rate | 0.001 (cosine decay) |
