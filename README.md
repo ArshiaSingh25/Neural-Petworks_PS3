@@ -264,9 +264,6 @@ Contextual Threat Score (CTS)
   ├── Shannon diversity modifier
   └── Narrative generator
     ↓
-Pollution Source Attribution
-(MDV fingerprint → cosine similarity → ranked sources)
-    ↓
 Frontend Dashboard
 (annotated image · per-particle table · CTS gauge ·
  species at risk · narrative · source attribution report)
