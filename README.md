@@ -3,8 +3,8 @@
 **Theme: Marine Ecosystem Protection & Water Quality Monitoring**
 
 ### Research Gap Addressed
-All established ecological risk indices (PLI, PERI, PHI, RQ) require polymer chemical identification via FTIR spectroscopy. Our ETI and pollution source attribution system is the first morphology-and-size-derived risk framework computable directly from a microscope image, enabling real-time field assessment without chemical analysis.
-
+All established ecological risk indices (PLI, PERI, PHI, RQ) require polymer chemical identification via FTIR spectroscopy — a $20,000+ lab instrument that cannot be deployed in the field. Our Contextual Threat Score (CTS) is the first morphology-and-geometry-derived risk framework computable directly from a microscope image, with scores dynamically adjusted by marine zone and seasonal ecology. This enables real-time field assessment without any chemical analysis.
+ 
 
 ## 1. Dataset & Preprocessing
 
