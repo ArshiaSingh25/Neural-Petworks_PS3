@@ -105,8 +105,7 @@ The dataset is perfectly balanced across all four morphological classes.
   - Trophic amplification score (food web bioaccumulation multiplier for particles <100µm)
 - **Pellet / Microbead detection** — fourth morphological class (pallet) fully implemented
 
-### Novel Scientific Contribution
-- **Pollution Source Attribution via Morphological Fingerprinting** — the first image-based system to identify the likely pollution source (textile effluent, fishing industry, packaging waste, personal care products, urban stormwater) from morphology distribution alone, without requiring FTIR chemical analysis. Uses confidence-weighted Morphology Distribution Vector (MDV) and cosine similarity against literature-derived source profiles.
+
 
 ---
 
